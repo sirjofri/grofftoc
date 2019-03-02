@@ -1,0 +1,95 @@
+#!/usr/bin/awk -f
+#
+# This script works only with `-me` documents at the moment.
+#
+# Created by sirjofri in 2019
+#
+# Feel free to use this for anything what you want. You can send
+# me nice messages to keep me motivated, but do not expect
+# anything out of this.
+#
+#
+# Usage: grofftoc < my-groff-document.me > valid-groff-document.me
+
+# Set up default values
+BEGIN {
+	last = 1;
+	tocname = "Table of Contents";
+}
+
+# `.+c` automatically creates (bold) toc entries
+/^.+c / {
+	printf "%s\n", $0;
+	count[0]++;
+
+# Reset subs
+	for (i in count) {
+		if (i > 0)
+			count[i] = 0;
+	}
+
+	$1 = "";
+	gsub(/^[[:space:]]*"?[[:space:]]*|[[:space:]]*"?[[:space:]]*$/, "");
+	printf ".(x t\n.sp .1in\n.b\n%s\\0\\0%s\n.r\n.)x\n", count[0], $0;
+	next;
+}
+
+# `.sh` automatically creates toc entries
+/^\.sh/ {
+	cnt = last;
+	if ($2) {
+		cnt = $2;
+	}
+	count[cnt]++;
+
+# Reset subs
+	for (i in count) {
+		if (i > cnt)
+			count[i] = 0;
+	}
+
+	if ($3) {
+		ttl = $3;
+	} else {
+		getline nextline;
+		ttl = nextline;
+	}
+	for (i in count) {
+		if (count[i] == 0)
+			break;
+		if (i == 0)
+			numbers = count[i];
+		if (i > 0)
+			numbers = numbers "." count[i];
+	}
+	print;
+	fill = "";
+	for (i = length(numbers); i>0; i--)
+		fill = fill "\\0\\0";
+	if (nextline)
+		print nextline;
+	printf ".(x t\n%s%s\\0\\0%s\n.)x\n", fill, numbers, ttl;
+	if (nextline)
+		next;
+}
+
+# Use `.tocname <name>` to set the chapter name
+/^\.tocname/ {
+	$1 = "";
+	gsub(/^[[:space:]]*|[[:space:]]*$/, "");
+	tocname = $0;
+	next;
+}
+
+# Use `.TOC` to create the table of contents
+/^\.TOC/ {
+	printf ".+c \"%s\"\n", tocname;
+	printf ".xp t\n";
+}
+
+# Print all other lines
+/.*/ {
+	print;
+}
+
+# vim:syntax=awk:foldmethod=indent:set noet
