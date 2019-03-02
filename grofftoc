@@ -48,8 +48,12 @@ BEGIN {
 			count[i] = 0;
 	}
 
+	original = $0;
+
 	if ($3) {
-		ttl = $3;
+		$1 = $2 = "";
+		gsub(/^[[:space:]]*"?|"?[[:space:]]*$/, "");
+		ttl = $0;
 	} else {
 		getline nextline;
 		ttl = nextline;
@@ -62,15 +66,14 @@ BEGIN {
 		if (i > 0)
 			numbers = numbers "." count[i];
 	}
-	print;
+	print original;
 	fill = "";
 	for (i = length(numbers); i>0; i--)
 		fill = fill "\\0\\0";
 	if (nextline)
 		print nextline;
 	printf ".(x t\n%s%s\\0\\0%s\n.)x\n", fill, numbers, ttl;
-	if (nextline)
-		next;
+	next;
 }
 
 # Use `.tocname <name>` to set the chapter name
